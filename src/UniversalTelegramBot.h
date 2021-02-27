@@ -86,6 +86,7 @@ public:
 
   bool sendSimpleMessage(const String& chat_id, const String& text, const String& parse_mode);
   bool sendMessage(const String& chat_id, const String& text, const String& parse_mode = "", int message_id = 0);
+  int sendMessageReturnId(const String& chat_id, const String& text, const String& parse_mode = "", int message_id = 0);
   bool sendMessageWithReplyKeyboard(const String& chat_id, const String& text,
                                     const String& parse_mode, const String& keyboard,
                                     bool resize = false, bool oneTime = false,
@@ -96,6 +97,7 @@ public:
   bool sendChatAction(const String& chat_id, const String& text);
 
   bool sendPostMessage(JsonObject payload, bool edit = false); 
+  int sendPostMessageReturnMessageId(JsonObject payload, bool edit = false); 
   String sendPostPhoto(JsonObject payload);
   String sendPhotoByBinary(const String& chat_id, const String& contentType, int fileSize,
                            MoreDataAvailable moreDataAvailableCallback,

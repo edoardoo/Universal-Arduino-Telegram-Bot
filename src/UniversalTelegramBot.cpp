@@ -37,6 +37,7 @@
 
 #define ZERO_COPY(STR)    ((char*)STR.c_str())
 #define BOT_CMD(STR)      buildCommand(F(STR))
+#define TELEGRAM_DEBUG 1
 
 UniversalTelegramBot::UniversalTelegramBot(const String& token, Client &client) {
   updateToken(token);
@@ -574,6 +575,21 @@ bool UniversalTelegramBot::sendMessage(const String& chat_id, const String& text
 
   return sendPostMessage(payload.as<JsonObject>(), message_id); // if message id == 0 then edit is false, else edit is true
 }
+int UniversalTelegramBot::sendMessageReturnId(const String& chat_id, const String& text,
+                                       const String& parse_mode, int message_id) { // added message_id
+
+  DynamicJsonDocument payload(maxMessageLength);
+  payload["chat_id"] = chat_id;
+  payload["text"] = text;
+
+  if (message_id != 0)
+    payload["message_id"] = message_id; // added message_id
+
+  if (parse_mode != "")
+    payload["parse_mode"] = parse_mode;
+
+  return sendPostMessageReturnMessageId(payload.as<JsonObject>(), message_id); // if message id == 0 then edit is false, else edit is true
+}
 
 bool UniversalTelegramBot::sendMessageWithReplyKeyboard(
     const String& chat_id, const String& text, const String& parse_mode, const String& keyboard,
@@ -652,6 +668,33 @@ bool UniversalTelegramBot::sendPostMessage(JsonObject payload, bool edit) { // a
 
   closeClient();
   return sent;
+}
+int UniversalTelegramBot::sendPostMessageReturnMessageId(JsonObject payload, bool edit) { // added message_id
+
+  bool sent = false;
+  String response = "";
+  #ifdef TELEGRAM_DEBUG 
+    Serial.print(F("sendPostMessage: SEND Post Message: "));
+    serializeJson(payload, Serial);
+    Serial.println();
+  #endif 
+  unsigned long sttime = millis();
+
+  if (payload.containsKey("text")) {
+    while (millis() < sttime + 8000) { // loop for a while to send the message
+        response = sendPostToTelegram((edit ? BOT_CMD("editMessageText") : BOT_CMD("sendMessage")), payload); // if edit is true we send a editMessageText CMD
+         #ifdef TELEGRAM_DEBUG  
+        Serial.println(response);
+      #endif
+      sent = checkForOkResponse(response);
+      if (sent) break;
+    }
+  }
+
+  closeClient();
+  DynamicJsonDocument doc(response.length());
+  deserializeJson(doc, response);
+  return doc["result"]["message_id"];
 }
 
 String UniversalTelegramBot::sendPostPhoto(JsonObject payload) {
